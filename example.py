@@ -36,13 +36,32 @@ def main():
     def producer_fn(current_time):
         notes = [(40, 2), (41, 2.5), (43, 2)]
 
+        local_time = current_time
         for _ in range (0, 100):
             note = 36
             duration = 1
-            note_on(note, current_time)
-            note_off(note, current_time + Fraction(duration))
+            note_on(note, local_time)
+            note_off(note, local_time + Fraction(duration))
 
-            current_time = current_time + Fraction(duration)
+            local_time = local_time + Fraction(duration)
+
+        local_time = current_time + 0.5
+        for _ in range (0, 100):
+            note = 38
+            duration = 1
+            note_on(note, local_time)
+            note_off(note, local_time + Fraction(duration))
+
+            local_time = local_time + Fraction(duration)
+
+        local_time = current_time 
+        for _ in range (0, 400):
+            note = 42
+            duration = 0.125/2.0 
+            note_on(note, local_time)
+            note_off(note, local_time + Fraction(duration))
+
+            local_time = local_time + Fraction(duration)
 
         for (note, duration) in notes:
 
@@ -61,6 +80,7 @@ def main():
 
         time.sleep(1)
 
+        thread_start_time_ms = time.time()
         while not play_queue.empty():
             (current_time, message) = play_queue.get_nowait()
             midiout.send_message(message)
@@ -68,7 +88,11 @@ def main():
 
             (next_time, next_message) = play_queue.get_nowait()
             play_queue.put_nowait((next_time, next_message))
-            time.sleep(((next_time - current_time)*60.0)/bpm)
+            timeSinceStart = time.time()-thread_start_time_ms
+            timeInTheFuture = (next_time*60.0)/bpm
+            print(f'TimeSinceStart: {timeSinceStart}')
+            print(f'TimeWeWant: {timeInTheFuture}')
+            time.sleep(max(timeInTheFuture - (time.time()-thread_start_time_ms), 0))
 
 
     consumer = Thread(target=consumer_fn)
