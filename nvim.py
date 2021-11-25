@@ -1,22 +1,25 @@
 from pynvim import attach
-from example import do_code_change
+from threading import Thread
 
-nvim = attach('socket',  path='/tmp/nvim')
-
-nvim.command(f'echo "hello world" {nvim.channel_id}')
-
-nvim.subscribe('code_change')
-
-
-def do_param_change():
+def do_code_change(code_map, midi_channel, when, code):
+    code_map[(midi_channel, when)] = code
+    print(code_map)
     return False
 
+def run_nvim_listener(code_map):
+    nvim = attach('socket',  path='/tmp/nvim')
 
-while True:
-    [_, method, args] = nvim.next_message()
+    nvim.command(f'echo "hello world" {nvim.channel_id}')
 
-    if method == 'code_change':
-        do_code_change(*args)
-    elif method == 'param_change':
-        do_param_change(*args)
+    nvim.subscribe('code_change')
 
+    def nvim_loop():
+        while True:
+            [_, method, args] = nvim.next_message()
+
+            if method == 'code_change':
+                do_code_change(code_map, *args)
+
+    listener = Thread(target=nvim_loop)
+
+    listener.start()
