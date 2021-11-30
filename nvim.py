@@ -9,7 +9,7 @@ def do_code_change(code_map, midi_channel, when, code):
 def run_nvim_listener(code_map):
     nvim = attach('socket',  path='/tmp/nvim')
 
-    nvim.command(f'echo "hello world" {nvim.channel_id}')
+    nvim.command(f'let g:livecode_channel = {nvim.channel_id}')
 
     nvim.subscribe('code_change')
 

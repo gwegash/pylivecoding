@@ -7,13 +7,14 @@ from queue import PriorityQueue
 from fractions import Fraction
 from nvim import run_nvim_listener
 
-midiout = rtmidi.MidiOut()
-available_ports = midiout.get_ports()
+midiouts = []
+
+#available_ports = midiout.get_ports()
 
 play_queue = PriorityQueue()
 
 code_map = {}
-bpm = 120
+bpm = 170
 canonical_start_time = time.time()
 
 def sleep_until(until_time_beats: Fraction):
@@ -27,29 +28,27 @@ def beats_at_current_time():
 
 
 def main():
-    print(available_ports)
 
-    if available_ports:
-        midiout.open_port(0)
-    else:
-        midiout.open_virtual_port(available_ports[0])
+    for i in range(0, 6):
+        midiouts.append(rtmidi.MidiOut())
+        midiouts[i].open_port(i)
 
 
-    def note_on(note, time, velocity=127):
+    def note_on(note, time, channel, velocity=127):
         message = [0x90, note, velocity]  # channel 1, middle C, velocity 112
-        play_queue.put((time, message))
+        play_queue.put((time, (channel, message)))
 
 
-    def note_off(note, time):
+    def note_off(note, time, channel):
         message = [0x90, note, 0]  # channel 1, middle C, velocity 112
-        play_queue.put((time, message))
+        play_queue.put((time, (channel, message)))
 
 
 
 
 
     # produces notes for a particular channel
-    def producer_fn(current_time):
+    def producer_fn(channel_id, current_time):
         local_time = current_time
 
         ticker = 0
@@ -62,9 +61,9 @@ def main():
             ticker += 1
             return ticker - 1
 
-        def play(note, duration=0.5):
-            note_on(note, local_time)
-            note_off(note, local_time + Fraction(duration))
+        def play(note, duration=0.5, channel=channel_id):
+            note_on(note, local_time, channel)
+            note_off(note, local_time + Fraction(duration), channel)
 
         def sleep(t):
             nonlocal local_time
@@ -74,13 +73,14 @@ def main():
         while True:
             time_at_beginning = local_time
             # runnable code here:
-            if (0, 'now') in code_map:
-                exec(code_map[(0, 'now')] + "\nloop()", {'sleep': sleep, 'play': play, 'tick': tick, 'look': look})
+            if (channel_id, 'now') in code_map:
+                the_code = code_map[(channel_id, 'now')]
+                exec(the_code + "\nloop()", {'sleep': sleep, 'play': play, 'tick': tick, 'look': look})
                 print(local_time)
             else:
                 for i in range(0, 4):
                     print('nothing!')
-                    play_queue.put((local_time, 0))
+                    play_queue.put((local_time, (-1, 0)))
                     sleep(1)
 
             code_snippet_length_beats = local_time - time_at_beginning
@@ -88,13 +88,16 @@ def main():
             sleep_until(local_time - code_snippet_length_beats)  # we want to run these things ideally a bar (snippet length) ahead of time
 
 
-    producer = Thread(target=producer_fn, args=(Fraction(0),))
+    producers = []
+    for i in range(0, 6):
+        producer = Thread(target=producer_fn, args=(i, Fraction(0),))
+        producer.start()
 
 
     def consumer_fn():
         playhead_time = Fraction(0)
 
-        time.sleep(1.0) # eww - work out a better way of doing this
+        time.sleep(0.1) # eww - work out a better way of doing this
         while True:
             #if play_queue.empty():
             #    next_time = playhead_time + Fraction(4)
@@ -102,20 +105,19 @@ def main():
             #    print('sleeping 4 bars!')
             #    sleep_until(playhead_time)
             #else:
-            (current_time, message) = play_queue.get_nowait()
-            if not message == 0:
-                midiout.send_message(message)
+            (current_time, (channel, message)) = play_queue.get_nowait()
+            if not channel == -1:
+                midiouts[channel].send_message(message)
             playhead_time = current_time
 
                 #if not play_queue.empty():
-            (next_time, next_message) = play_queue.get_nowait()
-            play_queue.put_nowait((next_time, next_message))
+            (next_time, (channel, next_message)) = play_queue.get_nowait()
+            play_queue.put_nowait((next_time, (channel, next_message)))
             sleep_until(next_time)
 
 
     consumer = Thread(target=consumer_fn)
 
-    producer.start()
     consumer.start()
     run_nvim_listener(code_map)
 

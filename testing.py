@@ -1,15 +1,15 @@
 
-def loop():
-    for _ in range(0, 8):
-        bd = 36
-        sn = 38
-        hh = 42
-        tick()
-        if look() % 32 == 16: play(sn)
-        if look() % 32 == 0: play(bd)
-        play(hh)
-        sleep(0.125/2.0) 
+def loop(channel=1):
+    for char in "1--1--1-":
+        if not char == '-':
+            play(35 + int(char), 0.3)
+        sleep(0.5) 
 
+def loop(channel=2):
+    for char in "1--0-1-9":
+        if not char == '-':
+            play(36 + int(char))
+        sleep(0.5) 
 
 
 
