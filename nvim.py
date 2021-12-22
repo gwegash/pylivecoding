@@ -1,10 +1,17 @@
 from pynvim import attach
 from threading import Thread
+import re
 
-def do_code_change(code_map, midi_channel, when, code):
-    code_map[(midi_channel, when)] = code
+def do_code_change(code_map, when, code):
+    channel = parse_channel(code)
+    code_map[(channel, when)] = code
     print(code_map)
     return False
+
+def parse_channel(buffer):
+    match = re.search("channel\s?=\s?[0-9]*", buffer).group(0)
+    return int(match.split("=")[1])
+
 
 def run_nvim_listener(code_map):
     nvim = attach('socket',  path='/tmp/nvim')
