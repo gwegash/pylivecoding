@@ -62,7 +62,7 @@ def main():
             return ticker - 1
 
         def bar(desired_bar, of):
-            return (int(local_time/4) % of) == desired_bar
+            return (int(local_time/4) % of) == desired_bar - 1
 
         def play(note, duration=0.5, channel=channel_id):
             note_on(note, local_time, channel)
@@ -78,7 +78,7 @@ def main():
             # runnable code here:
             if (channel_id, 'now') in code_map:
                 the_code = code_map[(channel_id, 'now')]
-                exec(the_code + "\nloop()", {'sleep': sleep, 'play': play, 'tick': tick, 'look': look})
+                exec(the_code + "\nloop()", {'sleep': sleep, 'play': play, 'tick': tick, 'look': look, 'bar': bar})
                 print(local_time)
             else:
                 for i in range(0, 4):
