@@ -50,6 +50,7 @@ def main():
     # produces notes for a particular channel
     def producer_fn(channel_id, current_time):
         local_time = current_time
+        drones = {}
 
         ticker = 0
 
@@ -72,13 +73,28 @@ def main():
             nonlocal local_time
             local_time += Fraction(t)
 
+        def drone(note, channel=channel_id):
+            if (note, channel) in drones:
+                drones[(note, channel)] += 1
+            else:
+                drones[(note, channel)] = 1
+                note_on(note, local_time, channel)
+
+        def cleanup_drones(time_at_start):
+            for ((note, channel), val) in list(drones.items()):
+                if val <= 0:
+                    note_off(note, time_at_start, channel)
+                    del drones[(note, channel)]
+                else:
+                    drones[(note, channel)] = val - 1
+
         # main live_loop
         while True:
             time_at_beginning = local_time
             # runnable code here:
             if (channel_id, 'now') in code_map:
                 the_code = code_map[(channel_id, 'now')]
-                exec(the_code + "\nloop()", {'sleep': sleep, 'play': play, 'tick': tick, 'look': look, 'bar': bar})
+                exec(the_code + "\nloop()", {'sleep': sleep, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone})
                 print(local_time)
             else:
                 for i in range(0, 4):
@@ -87,6 +103,7 @@ def main():
                     sleep(1)
 
             code_snippet_length_beats = local_time - time_at_beginning
+            cleanup_drones(time_at_beginning)
 
             sleep_until(local_time - code_snippet_length_beats)  # we want to run these things ideally a bar (snippet length) ahead of time
 
