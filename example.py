@@ -7,6 +7,9 @@ from queue import PriorityQueue
 from fractions import Fraction
 from nvim import run_nvim_listener
 
+import pretty_midi
+from pychord import Chord
+
 midiouts = []
 
 #available_ports = midiout.get_ports()
@@ -73,12 +76,23 @@ def main():
             nonlocal local_time
             local_time += Fraction(t)
 
+        def time():
+            return local_time
+
         def drone(note, channel=channel_id):
             if (note, channel) in drones:
                 drones[(note, channel)] += 1
             else:
                 drones[(note, channel)] = 1
                 note_on(note, local_time, channel)
+
+        def diatonic(scale="Cmaj", note=1, quality=""):
+            chordObject = Chord.from_note_index(note=note, scale=scale, quality=quality, diatonic=True)
+            return [pretty_midi.note_name_to_number(note_name) for note_name in chordObject.components_with_pitch(root_pitch=4)]
+
+        def chord(chord_name):
+            chordObject = Chord(chord_name)
+            return [pretty_midi.note_name_to_number(note_name) for note_name in chordObject.components_with_pitch(root_pitch=4)]
 
         def cleanup_drones(time_at_start):
             for ((note, channel), val) in list(drones.items()):
@@ -94,7 +108,7 @@ def main():
             # runnable code here:
             if (channel_id, 'now') in code_map:
                 the_code = code_map[(channel_id, 'now')]
-                exec(the_code + "\nloop()", {'sleep': sleep, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone})
+                exec(the_code + "\nloop()", {'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone})
                 print(local_time)
             else:
                 for i in range(0, 4):
