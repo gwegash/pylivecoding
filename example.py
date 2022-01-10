@@ -62,8 +62,8 @@ def main():
             ticker += 1
             return ticker - 1
 
-        def bar(desired_bar, of):
-            return (int(local_time/4) % of) == desired_bar - 1
+        def bar(of):
+            return (int(local_time/4) % of) + 1
 
         def play(note, duration=0.5, channel=channel_id):
             note_on(note, local_time, channel)
