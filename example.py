@@ -22,7 +22,7 @@ canonical_start_time = time.time()
 
 def sleep_until(until_time_beats: Fraction):
     timeInTheFuture = (until_time_beats*60.0)/bpm
-    print(f'TimeWeWant: {timeInTheFuture}')
+    #print(f'TimeWeWant: {timeInTheFuture}')
     time.sleep(max(timeInTheFuture - (time.time()-canonical_start_time), 0))
 
 def beats_at_current_time():
@@ -32,18 +32,16 @@ def beats_at_current_time():
 
 def main():
 
-    for i in range(0, 6):
-        midiouts.append(rtmidi.MidiOut())
-        midiouts[i].open_port(i)
-
+    midiout = rtmidi.MidiOut()
+    midiout.open_port(1) # hack, find a better way. on startup wait for input on a list of midi options
 
     def note_on(note, time, channel, velocity=127):
-        message = [0x90, note, velocity]  # channel 1, middle C, velocity 112
+        message = [0x90 + channel, note, velocity]  # channel 1, middle C, velocity 112
         play_queue.put((time, (channel, message)))
 
 
     def note_off(note, time, channel):
-        message = [0x90, note, 0]  # channel 1, middle C, velocity 112
+        message = [0x90 + channel, note, 0]  # channel 1, middle C, velocity 112
         play_queue.put((time, (channel, message)))
 
 
@@ -112,7 +110,7 @@ def main():
                 print(local_time)
             else:
                 for i in range(0, 4):
-                    print('nothing!')
+                    #print('nothing!')
                     play_queue.put((local_time, (-1, 0)))
                     sleep(1)
 
@@ -141,7 +139,7 @@ def main():
             #else:
             (current_time, (channel, message)) = play_queue.get_nowait()
             if not channel == -1:
-                midiouts[channel].send_message(message)
+                midiout.send_message(message)
             playhead_time = current_time
 
                 #if not play_queue.empty():
