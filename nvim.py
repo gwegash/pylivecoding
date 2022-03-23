@@ -1,11 +1,12 @@
 from pynvim import attach
 from threading import Thread
 import re
+import logging
 
 def do_code_change(code_map, when, code):
     channel = parse_channel(code)
     code_map[(channel, when)] = code
-    print(code_map)
+    logging.debug(code_map)
     return False
 
 def parse_channel(buffer):

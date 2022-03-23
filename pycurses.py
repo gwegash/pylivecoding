@@ -1,14 +1,35 @@
 import sys,os
 import curses
 
+from fractions import Fraction
+
+import thread_globals
+import time
+import pretty_midi
+
+TIME_RESOLUTION = Fraction(1, 8)
+SHOW_NOTE_OFFS = False
+
+def sleep_until(until_time_beats: Fraction):
+    timeInTheFuture = (until_time_beats*60.0)/thread_globals.bpm
+    time.sleep(max(timeInTheFuture - (time.time()-thread_globals.canonical_start_time), 0))
+
+def isNoteOn(message):
+    return message[2] > 0
 
 def draw_menu(stdscr):
-    def drawChannel(track_id, time, height, width):
+    stdscr.nodelay(True)
+    ui_current_time = Fraction(0) # TODO probably set this to global time
+    time.sleep(0.1)
+
+    def drawChannel(track_id, height, width):
+        channelMessages = [(time, message) for (time, (channel, message)) in thread_globals.play_queue.queue if channel==track_id]
+        y_coordMessages = [((time-ui_current_time)//TIME_RESOLUTION, message) for (time, message) in channelMessages]
+        #draw background
         for j in range(0, height):
             channelWidth = width//8 # take off one for the line
             # turning on attributes for title
-            stdscr.attron(curses.color_pair(2))
-            stdscr.attron(curses.A_BOLD)
+
 
             channelString = "-"*(channelWidth - 1)
 
@@ -16,12 +37,26 @@ def draw_menu(stdscr):
             stdscr.addstr(j, track_id*(channelWidth), channelString)
 
             trackSeperatorLocation = (track_id + 1)*(channelWidth) - 1
-            if(trackSeperatorLocation < width):
+            if(trackSeperatorLocation < width - 1):
                 stdscr.addstr(j, trackSeperatorLocation, "|")
 
+        #TODO current assumption is no chords only single notes
+        for (yCoord, message) in y_coordMessages:
+            lineContent = ""
 
-            stdscr.attroff(curses.color_pair(2))
-            stdscr.attroff(curses.A_BOLD)
+            if(yCoord < height):
+                lineContent = pretty_midi.note_number_to_name(message[1])[:channelWidth - 1]
+                if(isNoteOn(message)):
+                    stdscr.attron(curses.color_pair(2))
+                    stdscr.attron(curses.A_BOLD)
+                    # rendering title
+                    stdscr.addstr(yCoord, track_id*(channelWidth), lineContent)
+
+                    stdscr.attroff(curses.color_pair(2))
+                    stdscr.attroff(curses.A_BOLD)
+                elif SHOW_NOTE_OFFS: #TODO properly
+                    stdscr.addstr(yCoord, track_id*(channelWidth), lineContent)
+
 
 
 
@@ -30,8 +65,9 @@ def draw_menu(stdscr):
     cursor_y = 0
 
     # Clear and refresh the screen for a blank canvas
-    stdscr.clear()
-    stdscr.refresh()
+    #stdscr.clear()
+    #stdscr.refresh()
+
 
     # Start colors in curses
     curses.start_color()
@@ -43,17 +79,17 @@ def draw_menu(stdscr):
     while (k != ord('q')):
 
         # Initialization
-        stdscr.clear()
+        #stdscr.clear()
         height, width = stdscr.getmaxyx()
 
-        if k == ord('j'):
-            cursor_y = cursor_y + 1
-        elif k == ord('k'):
-            cursor_y = cursor_y - 1
-        elif k == ord('l'):
-            cursor_x = cursor_x + 1
-        elif k == ord('h'):
-            cursor_x = cursor_x - 1
+        #if k == ord('j'):
+        #    cursor_y = cursor_y + 1
+        #elif k == ord('k'):
+        #    cursor_y = cursor_y - 1
+        #elif k == ord('l'):
+        #    cursor_x = cursor_x + 1
+        #elif k == ord('h'):
+        #    cursor_x = cursor_x - 1
 
         cursor_x = max(0, cursor_x)
         cursor_x = min(width-1, cursor_x)
@@ -61,27 +97,13 @@ def draw_menu(stdscr):
         cursor_y = max(0, cursor_y)
         cursor_y = min(height-1, cursor_y)
 
-        # Declaration of strings
-        title = "Curses example"[:width-1]
-        subtitle = "Written by Clay McLeod"[:width-1]
-        keystr = "Last key pressed: {}".format(k)[:width-1]
         statusbarstr = "Press 'q' to exit | STATUS BAR | Pos: {}, {}".format(cursor_x, cursor_y)
         if k == 0:
             keystr = "No key press detected..."[:width-1]
 
-        # Centering calculations
-        start_x_title = int((width // 2) - (len(title) // 2) - len(title) % 2)
-        start_x_subtitle = int((width // 2) - (len(subtitle) // 2) - len(subtitle) % 2)
-        start_x_keystr = int((width // 2) - (len(keystr) // 2) - len(keystr) % 2)
-        start_y = int((height // 2) - 2)
-
         ## draw channels
         for i in range(0,8):
-            drawChannel(i, None, height, width)
-
-        # Rendering some text
-        whstr = "Width: {}, Height: {}".format(width, height)
-        stdscr.addstr(0, 0, whstr, curses.color_pair(1))
+            drawChannel(i, height, width)
 
         # Render status bar
         stdscr.attron(curses.color_pair(3))
@@ -89,22 +111,6 @@ def draw_menu(stdscr):
         stdscr.addstr(height-1, len(statusbarstr), " " * (width - len(statusbarstr) - 1))
         stdscr.attroff(curses.color_pair(3))
 
-
-        # turning on attributes for title
-        stdscr.attron(curses.color_pair(2))
-        stdscr.attron(curses.A_BOLD)
-
-        # rendering title
-        stdscr.addstr(start_y, start_x_title, title)
-
-        # Turning off attributes for title
-        stdscr.attroff(curses.color_pair(2))
-        stdscr.attroff(curses.A_BOLD)
-
-        # Print rest of text
-        stdscr.addstr(start_y + 1, start_x_subtitle, subtitle)
-        stdscr.addstr(start_y + 3, (width // 2) - 2, '-' * 4)
-        stdscr.addstr(start_y + 5, start_x_keystr, keystr)
         stdscr.move(cursor_y, cursor_x)
 
         # Refresh the screen
@@ -112,9 +118,12 @@ def draw_menu(stdscr):
 
         # Wait for next input
         k = stdscr.getch()
+        ui_current_time = ui_current_time + TIME_RESOLUTION
+        sleep_until(ui_current_time)
 
-def main():
+def run_gui():
+    curses.wrapper(draw_menu)
     curses.wrapper(draw_menu)
 
 if __name__ == "__main__":
-    main()
+    run_gui()

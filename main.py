@@ -3,46 +3,51 @@ import rtmidi
 from threading import Thread
 import sys
 
-from queue import PriorityQueue
 from fractions import Fraction
 from nvim import run_nvim_listener
 
 import pretty_midi
+import thread_globals
 from pychord import Chord
+import ipdb
+import logging
+
+from pycurses import run_gui
+
 
 midiouts = []
 
 #available_ports = midiout.get_ports()
 
-play_queue = PriorityQueue()
-
 code_map = {}
-bpm = 170
-canonical_start_time = time.time()
 
 def sleep_until(until_time_beats: Fraction):
-    timeInTheFuture = (until_time_beats*60.0)/bpm
+    timeInTheFuture = (until_time_beats*60.0)/thread_globals.bpm
     #print(f'TimeWeWant: {timeInTheFuture}')
-    time.sleep(max(timeInTheFuture - (time.time()-canonical_start_time), 0))
+    time.sleep(max(timeInTheFuture - (time.time()-thread_globals.canonical_start_time), 0))
 
 def beats_at_current_time():
-    return Fraction((time.time()-canonical_start_time)*bpm/60)
+    return Fraction((time.time()-thread_globals.canonical_start_time)*thread_globals.bpm/60)
 
 
 
 def main():
 
+
+    thread_globals.initialise()
+
     midiout = rtmidi.MidiOut()
+    logging.debug(midiout.get_ports())
     midiout.open_port(1) # hack, find a better way. on startup wait for input on a list of midi options
 
     def note_on(note, time, channel, velocity=127):
-        message = [0x90 + channel, note, velocity]  # channel 1, middle C, velocity 112
-        play_queue.put((time, (channel, message)))
+        message = [0x90 + channel, note, velocity]
+        thread_globals.play_queue.put((time, (channel, message)))
 
 
     def note_off(note, time, channel):
-        message = [0x90 + channel, note, 0]  # channel 1, middle C, velocity 112
-        play_queue.put((time, (channel, message)))
+        message = [0x90 + channel, note, 0]
+        thread_globals.play_queue.put((time, (channel, message)))
 
 
 
@@ -107,11 +112,11 @@ def main():
             if (channel_id, 'now') in code_map:
                 the_code = code_map[(channel_id, 'now')]
                 exec(the_code + "\nloop()", {'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone})
-                print(local_time)
+                #print(local_time)
             else:
                 for i in range(0, 4):
                     #print('nothing!')
-                    play_queue.put((local_time, (-1, 0)))
+                    thread_globals.play_queue.put((local_time, (-1, 0)))
                     sleep(1)
 
             code_snippet_length_beats = local_time - time_at_beginning
@@ -127,7 +132,7 @@ def main():
 
 
     def consumer_fn():
-        playhead_time = Fraction(0)
+        #thread_globals.playhead_time = Fraction(0) # TODO might need this probably not
 
         time.sleep(0.1) # eww - work out a better way of doing this
         while True:
@@ -137,14 +142,14 @@ def main():
             #    print('sleeping 4 bars!')
             #    sleep_until(playhead_time)
             #else:
-            (current_time, (channel, message)) = play_queue.get_nowait()
+            (current_time, (channel, message)) = thread_globals.play_queue.get_nowait()
             if not channel == -1:
                 midiout.send_message(message)
-            playhead_time = current_time
+            thread_globals.playhead_time = current_time
 
                 #if not play_queue.empty():
-            (next_time, (channel, next_message)) = play_queue.get_nowait()
-            play_queue.put_nowait((next_time, (channel, next_message)))
+            (next_time, (channel, next_message)) = thread_globals.play_queue.get_nowait()
+            thread_globals.play_queue.put_nowait((next_time, (channel, next_message)))
             sleep_until(next_time)
 
 
@@ -153,7 +158,10 @@ def main():
     consumer.start()
     run_nvim_listener(code_map)
 
+    guiThread = Thread(target=run_gui)
+    guiThread.start()
 
+    guiThread.join()
     producer.join()
     consumer.join()
     midiout.close_port()
