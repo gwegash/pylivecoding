@@ -46,14 +46,14 @@ def loop(channel=2):
 
 
 def loop(channel=3):
-    play(65 - 13, 1)
+    play(65 - 8, 1)
     sleep(16)
 
 
 def loop(channel=3):
     currentChord = chord("Em")
     play(currentChord[tick() % len(currentChord) ], 0.07)
-    sleep(0.25)
+    sleep(0.5)
 
 def loop(channel=1):
     for char in "10318591":

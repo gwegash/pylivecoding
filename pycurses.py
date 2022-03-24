@@ -103,7 +103,13 @@ def draw_menu(stdscr):
 
         ## draw channels
         for i in range(0,8):
-            drawChannel(i, height, width)
+            drawChannel(i, height - 2, width)
+
+        # draw 16 bar progress
+        progressWidth = width // 3
+        progress16 = progressWidth * ((ui_current_time / 4) % 16) // 16
+        progressStr = "#"*progress16 + (progressWidth-progress16 - 1)*" " + "|"
+        stdscr.addstr(height-2, 0, progressStr)
 
         # Render status bar
         stdscr.attron(curses.color_pair(3))
