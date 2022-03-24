@@ -29,6 +29,8 @@ def sleep_until(until_time_beats: Fraction):
 def beats_at_current_time():
     return Fraction((time.time()-thread_globals.canonical_start_time)*thread_globals.bpm/60)
 
+def get_bar_modulo(modulo, time):
+    return (int(time/4) % modulo) + 1
 
 
 def main():
@@ -68,7 +70,7 @@ def main():
             ticker += 1
             return ticker - 1
 
-        def bar(of):
+        def bar(of): # which bar (of a on 'of' length section are we?)
             return (int(local_time/4) % of) + 1
 
         def play(note, duration=0.5, channel=channel_id):
@@ -76,6 +78,7 @@ def main():
             note_off(note, local_time + Fraction(duration), channel)
 
         def sleep(t):
+            ##TODO zero check
             nonlocal local_time
             local_time += Fraction(t)
 
@@ -108,6 +111,7 @@ def main():
         # main live_loop
         while True:
             time_at_beginning = local_time
+
             # runnable code here:
             if (channel_id, 'now') in code_map:
                 the_code = code_map[(channel_id, 'now')]
@@ -116,10 +120,22 @@ def main():
             else:
                 for i in range(0, 4):
                     #print('nothing!')
-                    thread_globals.play_queue.put((local_time, (-1, 0)))
+                    thread_globals.play_queue.put((local_time, (-1, -1)))
                     sleep(1)
 
+
             code_snippet_length_beats = local_time - time_at_beginning
+
+            if(code_snippet_length_beats/4 >= 16 or get_bar_modulo(16, local_time) < get_bar_modulo(16, time_at_beginning)): # we must have moved over a 16 bar boundary. Therefore check if the code needs changing & reset threads local time to the next (respective to the time_at_beginning).
+                #ipdb.set_trace()
+                if ((channel_id, '16') in code_map):
+                    code_map[(channel_id, 'now')] = code_map[(channel_id, '16')]
+                    code_map.pop((channel_id, '16'))
+                    local_time = 4*(int(time_at_beginning/4) + 16 - (int(time_at_beginning/4) % 16)) # go back to the last 16 bar line
+                    code_snippet_length_beats = local_time - time_at_beginning # recalculate
+
+                    logging.debug(f'here! {local_time}')
+
             cleanup_drones(time_at_beginning)
 
             sleep_until(local_time - code_snippet_length_beats)  # we want to run these things ideally a bar (snippet length) ahead of time
