@@ -37,10 +37,7 @@ def get_bar_modulo(modulo, time):
 
 
 def main():
-
-
     thread_globals.initialise()
-
     midiout = rtmidi.MidiOut()
     logging.debug(midiout.get_ports())
     midiout.open_port(len(midiout.get_ports()) - 1 ) # hack, find a better way. on startup wait for input on a list of midi options
@@ -137,8 +134,13 @@ def main():
             # runnable code here:
             if (channel_id, 'now') in code_map:
                 the_code = code_map[(channel_id, 'now')]
-                exec(the_code + "\nloop()", {cc: 'cc', 'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone, 'instrument' : instrument})
-                #print(local_time)
+                try:
+                    exec(the_code + "\nloop()", {cc: 'cc', 'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone, 'instrument' : instrument})
+                    #print(local_time)
+                except Exception as e:
+                    logging.exception(str(e))
+                    code_map.pop((channel_id, 'now'))
+                    sleep(4 - (local_time % 4))
             else:
                 for i in range(0, 4):
                     #print('nothing!')
