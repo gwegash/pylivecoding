@@ -1,5 +1,8 @@
 import time
 import rtmidi
+
+from rtmidi.midiconstants import CONTROL_CHANGE
+
 from threading import Thread
 import sys
 
@@ -40,27 +43,43 @@ def main():
 
     midiout = rtmidi.MidiOut()
     logging.debug(midiout.get_ports())
-    midiout.open_port(1) # hack, find a better way. on startup wait for input on a list of midi options
+    midiout.open_port(len(midiout.get_ports()) - 1 ) # hack, find a better way. on startup wait for input on a list of midi options
 
     def note_on(note, time, channel, velocity=127):
         message = [0x90 + channel, note, velocity]
         thread_globals.play_queue.put((time, (channel, message)))
 
-
     def note_off(note, time, channel):
         message = [0x90 + channel, note, 0]
         thread_globals.play_queue.put((time, (channel, message)))
 
+    def midi_cc(cc, value, time, channel):
+        message = [CONTROL_CHANGE + channel, cc, value]
+        thread_globals.play_queue.put((time, (channel, message)))
 
+    def program_change(program_int, time, channel):
+        midi_cc(16, program_int, time, channel) #we'll use the General purpose cc
 
+    def mute_channel(time, channel):
+        midi_cc(120, 0, time, channel)
 
 
     # produces notes for a particular channel
     def producer_fn(channel_id, current_time):
         local_time = current_time
         drones = {}
+        current_instrument = None
 
         ticker = 0
+
+        def instrument(instrument_int):
+            nonlocal current_instrument
+            if (current_instrument != instrument_int):
+                program_change(instrument_int, local_time, channel_id)
+
+            current_instrument = instrument_int
+
+            return ticker
 
         def look():
             return ticker
@@ -81,6 +100,9 @@ def main():
             ##TODO zero check
             nonlocal local_time
             local_time += Fraction(t)
+
+        def cc(cc, v, channel=channel_id):
+            midi_cc(cc, int(v*255), local_time, channel)
 
         def time():
             return local_time
@@ -115,7 +137,7 @@ def main():
             # runnable code here:
             if (channel_id, 'now') in code_map:
                 the_code = code_map[(channel_id, 'now')]
-                exec(the_code + "\nloop()", {'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone})
+                exec(the_code + "\nloop()", {cc: 'cc', 'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone, 'instrument' : instrument})
                 #print(local_time)
             else:
                 for i in range(0, 4):
