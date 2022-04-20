@@ -24,6 +24,10 @@ midiouts = []
 
 code_map = {}
 
+def normalizeMap(x):
+    return min(max(int(x*127), 0), 127)
+
+
 def sleep_until(until_time_beats: Fraction):
     timeInTheFuture = (until_time_beats*60.0)/thread_globals.bpm
     #print(f'TimeWeWant: {timeInTheFuture}')
@@ -39,19 +43,23 @@ def get_bar_modulo(modulo, time):
 def main():
     thread_globals.initialise()
     midiout = rtmidi.MidiOut()
-    logging.debug(midiout.get_ports())
-    midiout.open_port(len(midiout.get_ports()) - 1 ) # hack, find a better way. on startup wait for input on a list of midi options
+
+    for index in enumerate(midiout.get_ports()):
+        print(f'{index}: port')
+
+    portIdx = int(input("Select port\n"))
+    midiout.open_port(portIdx) # hack, find a better way. on startup wait for input on a list of midi options
 
     def note_on(note, time, channel, velocity=127):
-        message = [0x90 + channel, note, velocity]
+        message = [0x90 | channel, note, velocity]
         thread_globals.play_queue.put((time, (channel, message)))
 
     def note_off(note, time, channel):
-        message = [0x90 + channel, note, 0]
+        message = [0x90 | channel, note, 0]
         thread_globals.play_queue.put((time, (channel, message)))
 
     def midi_cc(cc, value, time, channel):
-        message = [CONTROL_CHANGE + channel, cc, value]
+        message = [CONTROL_CHANGE | channel, cc, value]
         thread_globals.play_queue.put((time, (channel, message)))
 
     def program_change(program_int, time, channel):
@@ -59,7 +67,6 @@ def main():
 
     def mute_channel(time, channel):
         midi_cc(120, 0, time, channel)
-
 
     # produces notes for a particular channel
     def producer_fn(channel_id, current_time):
@@ -89,8 +96,9 @@ def main():
         def bar(of): # which bar (of a on 'of' length section are we?)
             return (int(local_time/4) % of) + 1
 
-        def play(note, duration=0.5, channel=channel_id):
-            note_on(note, local_time, channel)
+        def play(note, duration=0.5, velocity=1, channel=channel_id):
+
+            note_on(note, local_time, channel, normalizeMap(velocity))
             note_off(note, local_time + Fraction(duration), channel)
 
         def sleep(t):
@@ -99,7 +107,7 @@ def main():
             local_time += Fraction(t)
 
         def cc(cc, v, channel=channel_id):
-            midi_cc(cc, int(v*255), local_time, channel)
+            midi_cc(cc, normalizeMap(v), local_time, channel)
 
         def time():
             return local_time
@@ -135,10 +143,10 @@ def main():
             if (channel_id, 'now') in code_map:
                 the_code = code_map[(channel_id, 'now')]
                 try:
-                    exec(the_code + "\nloop()", {cc: 'cc', 'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone, 'instrument' : instrument})
+                    exec(the_code + "\nloop()", {'cc': cc, 'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone, 'instrument' : instrument})
                     #print(local_time)
                 except Exception as e:
-                    logging.exception(str(e))
+                    logging.exception(f'Error evaluating channel {channel_id}\n{str(e)}')
                     code_map.pop((channel_id, 'now'))
                     sleep(4 - (local_time % 4))
             else:
@@ -168,6 +176,7 @@ def main():
     producers = []
     for i in range(0, 6):
         producer = Thread(target=producer_fn, args=(i, Fraction(0),))
+        producer.setDaemon(True)
         producer.start()
 
 
@@ -194,11 +203,13 @@ def main():
 
 
     consumer = Thread(target=consumer_fn)
+    consumer.setDaemon(True)
 
     consumer.start()
     run_nvim_listener(code_map)
 
     guiThread = Thread(target=run_gui)
+    guiThread.setDaemon(True)
     guiThread.start()
 
     guiThread.join()

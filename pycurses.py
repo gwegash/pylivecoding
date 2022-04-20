@@ -44,7 +44,7 @@ def draw_menu(stdscr):
         for (yCoord, message) in y_coordMessages:
             lineContent = ""
 
-            if(yCoord < height):
+            if((yCoord < height) and (message[0] & 0xF0 == 0x90)): # this is a music note
                 lineContent = pretty_midi.note_number_to_name(message[1])[:channelWidth - 1]
                 if(isNoteOn(message)):
                     stdscr.attron(curses.color_pair(2))
