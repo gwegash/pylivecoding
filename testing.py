@@ -1,6 +1,27 @@
 
 def loop(channel=0):
     import random
+    instrument(0)
+
+    def ringMax(*args):
+        return lambda x: max(*(arg(x) for arg in args))
+
+    pattern = ringMax(
+            euclid(8, 3),
+            lambda x: 3*euclid(8,2)(x),
+            lambda x: 5*euclid(64,1)(x-2),
+            lambda x: 4*euclid(24,2)(x),
+            lambda x: 9*euclid(64,1)(x-2),
+            )
+
+    for i in range(0, 8):
+        hit = pattern(tick())
+        if hit:
+            play(35 + random.choice([hit]), 1)
+        sleep(0.5)
+
+def loop(channel=0):
+    import random
     import string
     import math
     instrument(2)
@@ -10,26 +31,18 @@ def loop(channel=0):
         return ''.join([random.choice(string.digits) for i in range(0, 8)])
 
     patterns = ring(
-        "1-1--1-1",
-        "1--1--1-",
-        "000-10--",
-        "1--1--1-",
-        "0----0--",
-        "1--1--1-",
-        "0-0---1-",
-        "0----1--",
-        "000--1--",
-        "0-0---1-",
-        "0--0--0-",
-        "1--1--1-",
-        "1-1-1-51",
-        "0--1--1-",
-        "9----5-5",
-        "0--1--1-",
-        "0----199",
+        "0----1-2",
+        "1-01--1-",
+        "0----1-2",
+        "1-31--10",
+        "0----1-2",
+        "1-31--1-",
+        "0---01--",
+        "1-01-01-",
         )
-    pattern = patterns("--------") if not bar(16) == 16 else "-----5--",
-    #pattern = "--------"
+    #patterns(tick())
+    pattern = patterns(bar(16) - 1) if not bar(16) == 16 else "9---5--3"
+    #pattern = "--------" if not bar(16) == 16 else "9--115--"
     for char in pattern:
         if not char == '-':
             play(36 + int(char), 1.0)
@@ -49,8 +62,9 @@ def loop(channel=2):
 
 def loop(channel=4):
     c = chord("Ebsus4")
-    play(c(tick), 0.2)
-    sleep(0.5)
+    for i in range(0,4):
+        play(c(tick() % 13 - 2), 0.3)
+        sleep(0.5)
 
 def loop(channel=2):
     import math
@@ -60,8 +74,17 @@ def loop(channel=2):
 
 def loop(channel=4):
     c = chord("Ebsus4")
-    play(c(tick()), 0.2)
-    sleep(0.5)
+    for i in range(0, 4):
+        #play(c(tick()), 0.12)
+        play(c(-3 + tick() % 6) + 12, 0.1)
+        #play(c(tick()) - 12, 0.12)
+        sleep(0.5)
+
+def loop(channel=3):
+    c = chord("Emin")
+    for i in range(0, 4):
+        drone(c(i))
+    sleep(16)
 
 def loop(channel=4):
     play(24, 16)
@@ -71,11 +94,9 @@ def loop(channel=4):
 def loop(channel=4):
     import math
     for i in range(0, 16):
-        sleep(0.25)
+        sleep(0.125)
         cc(6, (tick() % 2 ), 3)
         cc(7, 0.5 + 0.2*math.sin(time()/16), 3)
-
-
 
 
 def loop(channel=3):
@@ -91,9 +112,10 @@ def loop(channel=3):
 
 
 def loop(channel=3):
-    currentChord = chord("Em")
-    play(currentChord[tick() % len(currentChord) ], 0.07)
-    sleep(0.5)
+    for i in range(0,4):
+        currentChord = chord("Em")
+        play(currentChord[tick() % len(currentChord) ], 0.07)
+        sleep(0.25)
 
 def loop(channel=1):
     instrument(3)

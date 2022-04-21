@@ -13,6 +13,9 @@ import pretty_midi
 import thread_globals
 from pychord import Chord
 import ipdb
+
+from euclid import euclid as euclidArr
+
 import logging
 
 from pycurses import run_gui
@@ -26,6 +29,12 @@ code_map = {}
 
 def normalizeMap(x):
     return min(max(int(x*127), 0), 127)
+
+def clampMidi(x):
+    return min(max(x, 0), 127)
+
+def infiniteChord(chordArray):
+    return lambda i: chordArray[i % len(chordArray)] + 12*(i//len(chordArray))
 
 
 def sleep_until(until_time_beats: Fraction):
@@ -68,6 +77,9 @@ def main():
         midi_cc(16, program_int, time, channel) #we'll use the General purpose cc
     def mute_channel(time, channel):
         midi_cc(120, 0, time, channel)
+
+    def euclid(beats, hits):
+        return ring(*euclidArr(beats, hits))
 
     # produces notes for a particular channel
     def producer_fn(channel_id, current_time):
@@ -122,11 +134,13 @@ def main():
 
         def diatonic(scale="Cmaj", note=1, quality=""):
             chordObject = Chord.from_note_index(note=note, scale=scale, quality=quality, diatonic=True)
-            return [pretty_midi.note_name_to_number(note_name) for note_name in chordObject.components_with_pitch(root_pitch=4)]
+            chordArray = [pretty_midi.note_name_to_number(note_name) for note_name in chordObject.components_with_pitch(root_pitch=4)]
+            return infiniteChord(chordArray)
 
         def chord(chord_name):
             chordObject = Chord(chord_name)
-            return ring(*[pretty_midi.note_name_to_number(note_name) for note_name in chordObject.components_with_pitch(root_pitch=4)])
+            chordArray = [pretty_midi.note_name_to_number(note_name) for note_name in chordObject.components_with_pitch(root_pitch=4)]
+            return infiniteChord(chordArray)
 
         def cleanup_drones(time_at_start):
             for ((note, channel), val) in list(drones.items()):
@@ -144,7 +158,7 @@ def main():
             if (channel_id, 'now') in code_map:
                 the_code = code_map[(channel_id, 'now')]
                 try:
-                    exec(the_code + "\nloop()", {'ring': ring, 'cc': cc, 'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone, 'instrument' : instrument})
+                    exec(the_code + "\nloop()", {'euclid' : euclid, 'ring': ring, 'cc': cc, 'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone, 'instrument' : instrument})
                     #print(local_time)
                 except Exception as e:
                     logging.exception(f'Error evaluating channel {channel_id}\n{str(e)}')
