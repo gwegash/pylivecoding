@@ -9,26 +9,27 @@ def loop(channel=0):
         # return random.choice(["1--1--39", "1--1--59"])
         return ''.join([random.choice(string.digits) for i in range(0, 8)])
 
-    patterns = [
-        "0----0--",
+    patterns = ring(
+        "1-1--1-1",
+        "1--1--1-",
+        "000-10--",
         "1--1--1-",
         "0----0--",
         "1--1--1-",
-#        "0----0--",
-#        "1--1--1-",
-#        "0-0---1-",
-#        "0----1--",
-#        "000--1--",
-#        "0-0---1-",
-#        "0--0--0-",
-#        "1--1--1-",
-#        "1-1-1-51",
-#        "0-0---1-",
-#        "9----5-5",
-#        "1--0--1-",
-#        "0----199",
-        ]
-    pattern = patterns[tick() % len(patterns)]# if not bar(8) == 8 else loose_patterns()
+        "0-0---1-",
+        "0----1--",
+        "000--1--",
+        "0-0---1-",
+        "0--0--0-",
+        "1--1--1-",
+        "1-1-1-51",
+        "0--1--1-",
+        "9----5-5",
+        "0--1--1-",
+        "0----199",
+        )
+    pattern = patterns("--------") if not bar(16) == 16 else "-----5--",
+    #pattern = "--------"
     for char in pattern:
         if not char == '-':
             play(36 + int(char), 1.0)
@@ -46,14 +47,23 @@ def loop(channel=2):
     drone(10)
     sleep(0.5)
 
+def loop(channel=4):
+    c = chord("Ebsus4")
+    play(c(tick), 0.2)
+    sleep(0.5)
 
 def loop(channel=2):
     import math
     instrument(1)
-    play(39 + [0, -4, -2, -7, -9, 0][tick() % 6], 16, velocity=(0.5 + 0.4*math.sin(time())))
+    play(39 + ring(0, -4, -2, -7, -9, 0)(tick()), 16, velocity=(0.5 + 0.4*math.sin(time())))
     sleep(16)
 
-def loop(channel=4)
+def loop(channel=4):
+    c = chord("Ebsus4")
+    play(c(tick()), 0.2)
+    sleep(0.5)
+
+def loop(channel=4):
     play(24, 16)
     sleep(16)
 
@@ -61,8 +71,8 @@ def loop(channel=4)
 def loop(channel=4):
     import math
     for i in range(0, 16):
-        sleep(1/3)
-        cc(6, (tick() % 2 ) * (0.5 + 0.22*math.sin(time()/8)), 3)
+        sleep(0.25)
+        cc(6, (tick() % 2 ), 3)
         cc(7, 0.5 + 0.2*math.sin(time()/16), 3)
 
 
@@ -71,7 +81,7 @@ def loop(channel=4):
 def loop(channel=3):
     instrument(5)
     tick()
-    play([40, 42, 38, 40][look() % 4] + 3, 8)
+    play(ring(40, 42, 38, 40)(look()) + 3, 8)
     sleep(8)
 
 

@@ -39,6 +39,8 @@ def beats_at_current_time():
 def get_bar_modulo(modulo, time):
     return (int(time/4) % modulo) + 1
 
+def ring(*args):
+    return lambda x: args[x % len(args)]
 
 def main():
     thread_globals.initialise()
@@ -64,7 +66,6 @@ def main():
 
     def program_change(program_int, time, channel):
         midi_cc(16, program_int, time, channel) #we'll use the General purpose cc
-
     def mute_channel(time, channel):
         midi_cc(120, 0, time, channel)
 
@@ -125,7 +126,7 @@ def main():
 
         def chord(chord_name):
             chordObject = Chord(chord_name)
-            return [pretty_midi.note_name_to_number(note_name) for note_name in chordObject.components_with_pitch(root_pitch=4)]
+            return ring(*[pretty_midi.note_name_to_number(note_name) for note_name in chordObject.components_with_pitch(root_pitch=4)])
 
         def cleanup_drones(time_at_start):
             for ((note, channel), val) in list(drones.items()):
@@ -143,7 +144,7 @@ def main():
             if (channel_id, 'now') in code_map:
                 the_code = code_map[(channel_id, 'now')]
                 try:
-                    exec(the_code + "\nloop()", {'cc': cc, 'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone, 'instrument' : instrument})
+                    exec(the_code + "\nloop()", {'ring': ring, 'cc': cc, 'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone, 'instrument' : instrument})
                     #print(local_time)
                 except Exception as e:
                     logging.exception(f'Error evaluating channel {channel_id}\n{str(e)}')
