@@ -6,7 +6,9 @@ import logging
 def do_code_change(code_map, when, code):
     channel = parse_channel(code)
     code_map[(channel, when)] = code
-    logging.debug(code_map)
+
+    executingLogLine = 'Executing now' if when == 'now' else f'Executing at the next {when} bar boundary'
+    logging.debug(f'recieved code change on channel {channel}. {executingLogLine}')
     return False
 
 def parse_channel(buffer):

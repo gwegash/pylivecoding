@@ -1,7 +1,7 @@
 
 def loop(channel=0):
     import random
-    instrument(0)
+    instrument(2)
 
     def ringMax(*args):
         return lambda x: max(*(arg(x) for arg in args))
@@ -63,7 +63,7 @@ def loop(channel=2):
 def loop(channel=4):
     c = chord("Ebsus4")
     for i in range(0,4):
-        play(c(tick() % 13 - 2), 0.3)
+        play(c(tick() % 3), 0.2)
         sleep(0.5)
 
 def loop(channel=2):
