@@ -14,6 +14,8 @@ import thread_globals
 from pychord import Chord
 import ipdb
 
+from math import sin, pi
+
 from euclid import euclid as euclidArr
 
 import logging
@@ -35,7 +37,6 @@ def clampMidi(x):
 
 def infiniteChord(chordArray):
     return lambda i: chordArray[i % len(chordArray)] + 12*(i//len(chordArray))
-
 
 def sleep_until(until_time_beats: Fraction):
     timeInTheFuture = (until_time_beats*60.0)/thread_globals.bpm
@@ -81,6 +82,12 @@ def main():
     def euclid(beats, hits):
         return ring(*euclidArr(beats, hits))
 
+    def nsin(x):
+        return 0.5*sin(x*(2*pi)) + 0.5
+
+    def nsaw(x):
+        return (x % 1)
+
     # produces notes for a particular channel
     def producer_fn(channel_id, current_time):
         local_time = current_time
@@ -125,6 +132,9 @@ def main():
         def time():
             return local_time
 
+        def ringMax(*args):
+            return lambda x: max(*[(arg(x) for arg in args)])
+
         def drone(note, channel=channel_id):
             if (note, channel) in drones:
                 drones[(note, channel)] += 1
@@ -158,7 +168,7 @@ def main():
             if (channel_id, 'now') in code_map:
                 the_code = code_map[(channel_id, 'now')]
                 try:
-                    exec(the_code + "\nloop()", {'euclid' : euclid, 'ring': ring, 'cc': cc, 'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone, 'instrument' : instrument})
+                    exec(the_code + "\nloop()", {'nsaw' : nsaw, 'nsin' : nsin, 'ringMax' : ringMax, 'euclid' : euclid, 'ring': ring, 'cc': cc, 'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone, 'instrument' : instrument})
                     #print(local_time)
                 except Exception as e:
                     logging.exception(f'Error evaluating channel {channel_id}\n{str(e)}')
@@ -180,8 +190,6 @@ def main():
                     code_map.pop((channel_id, '16'))
                     local_time = 4*(int(time_at_beginning/4) + 16 - (int(time_at_beginning/4) % 16)) # go back to the last 16 bar line
                     code_snippet_length_beats = local_time - time_at_beginning # recalculate
-
-                    logging.debug(f'here! {local_time}')
 
             cleanup_drones(time_at_beginning)
 

@@ -1,10 +1,6 @@
-
 def loop(channel=0):
     import random
     instrument(2)
-
-    def ringMax(*args):
-        return lambda x: max(*(arg(x) for arg in args))
 
     pattern = ringMax(
             euclid(8, 3),
@@ -19,6 +15,7 @@ def loop(channel=0):
         if hit:
             play(35 + random.choice([hit]), 1)
         sleep(0.5)
+
 
 def loop(channel=0):
     import random
@@ -76,7 +73,9 @@ def loop(channel=4):
     c = chord("Ebsus4")
     for i in range(0, 4):
         #play(c(tick()), 0.12)
-        play(c(-3 + tick() % 6) + 12, 0.1)
+        play(c(-1 + look() % 11) + 12, 0.5)
+        sleep(0.5)
+        play(c(-3 + tick() % 10) + 12, 0.5)
         #play(c(tick()) - 12, 0.12)
         sleep(0.5)
 
