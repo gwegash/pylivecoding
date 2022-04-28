@@ -14,7 +14,7 @@ def loop(channel=0):
         hit = pattern(tick())
         if hit:
             play(35 + random.choice([hit]), 1)
-        sleep(0.5)
+        sleep(0.25)
 
 
 def loop(channel=0):
@@ -73,9 +73,7 @@ def loop(channel=4):
     c = chord("Ebsus4")
     for i in range(0, 4):
         #play(c(tick()), 0.12)
-        play(c(-1 + look() % 11) + 12, 0.5)
-        sleep(0.5)
-        play(c(-3 + tick() % 10) + 12, 0.5)
+        play(c(tick() % 6), 0.1)
         #play(c(tick()) - 12, 0.12)
         sleep(0.5)
 

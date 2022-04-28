@@ -147,9 +147,9 @@ def main():
             chordArray = [pretty_midi.note_name_to_number(note_name) for note_name in chordObject.components_with_pitch(root_pitch=4)]
             return infiniteChord(chordArray)
 
-        def chord(chord_name):
+        def chord(chord_name, root_pitch=4):
             chordObject = Chord(chord_name)
-            chordArray = [pretty_midi.note_name_to_number(note_name) for note_name in chordObject.components_with_pitch(root_pitch=4)]
+            chordArray = [pretty_midi.note_name_to_number(note_name) for note_name in chordObject.components_with_pitch(root_pitch=root_pitch)]
             return infiniteChord(chordArray)
 
         def cleanup_drones(time_at_start):
