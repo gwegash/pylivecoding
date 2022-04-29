@@ -1,0 +1,7 @@
+ipdb==0.13.9
+ipython==8.1.1
+numpy==1.22.3
+pretty-midi==0.2.9
+pychord==1.0.0
+pynvim==0.4.1
+python-rtmidi==1.4.9.dev0

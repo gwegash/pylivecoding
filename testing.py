@@ -88,12 +88,11 @@ def loop(channel=4):
     sleep(16)
 
 
-def loop(channel=4):
+def loop(channel=5):
     import math
     for i in range(0, 16):
         sleep(0.125)
-        cc(6, (tick() % 2 ), 3)
-        cc(7, 0.5 + 0.2*math.sin(time()/16), 3)
+        cc(6, (tick() % 2 ), 5)
 
 
 def loop(channel=3):

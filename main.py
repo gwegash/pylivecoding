@@ -197,7 +197,7 @@ def main():
 
 
     producers = []
-    for i in range(0, 6):
+    for i in range(0, 8 + 1): #we'd like an additional one for cc sends
         producer = Thread(target=producer_fn, args=(i, Fraction(0),))
         producer.setDaemon(True)
         producer.start()
