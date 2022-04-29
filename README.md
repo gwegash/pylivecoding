@@ -4,7 +4,7 @@ This is ~pretty~ _very_ badly documented so far.
 
 You'll need a copy of nvim running, listening.
 ```
-vim --listen /tmp/nvim
+nvim --listen /tmp/nvim
 ```
 
 You'll also need to install the requirements. 
