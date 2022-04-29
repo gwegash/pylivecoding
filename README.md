@@ -1,12 +1,21 @@
 # Usage:
 
-server accepts osc messages of the following format:
+This is ~pretty~ _very_ badly documented so far. 
 
-/code
-{
-  code_update
-  when: 'asap' | 'before_4b, 8b, 16b, 32b, 64b' | 'after_4b, 8b | ....
-  code: 
-}
+You'll need a copy of nvim running, listening.
+```
+vim --listen /tmp/nvim
+```
 
-/automation
+You'll also need to install the requirements. 
+
+```
+pip3 install -r requirements.txt
+```
+
+Then a
+```
+python3 main.py 
+```
+
+should work
