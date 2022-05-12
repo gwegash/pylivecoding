@@ -11,7 +11,7 @@ def initialise():
     global play_queue
     play_queue = PriorityQueue() # should only (really) be added to by the producer threads consumed by consumer :)
     global bpm
-    bpm = 162
+    bpm = 150
     global canonical_start_time
     canonical_start_time = time.time()
 

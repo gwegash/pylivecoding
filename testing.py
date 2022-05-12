@@ -4,17 +4,16 @@ def loop(channel=0):
 
     pattern = ringMax(
             euclid(8, 3),
-            lambda x: 3*euclid(8,2)(x),
-            lambda x: 5*euclid(64,1)(x-2),
-            lambda x: 4*euclid(24,2)(x),
-            lambda x: 9*euclid(64,1)(x-2),
+            lambda x: 2*euclid(16,2)(x - 1),
+            lambda x: 6*euclid(64,1)(x-2),
+            lambda x: 10*euclid(32,1)(x-5),
             )
 
     for i in range(0, 8):
         hit = pattern(tick())
         if hit:
-            play(35 + random.choice([hit]), 1)
-        sleep(0.25)
+            play(-1 + random.choice([hit]) + 12, 1)
+        sleep(0.5)
 
 
 def loop(channel=0):
@@ -57,11 +56,44 @@ def loop(channel=2):
     drone(10)
     sleep(0.5)
 
-def loop(channel=4):
-    c = chord("Ebsus4")
-    for i in range(0,4):
-        play(c(tick() % 3), 0.2)
+def loop(channel=0):
+    pattern = ringMax(
+            #lambda x: 1*euclid(8,3)(x),
+            lambda x: 3*euclid(8,3)(x),
+            #lambda x: 10*euclid(29,3)(x),
+            #lambda x: 13*euclid(31,2)(x),
+            #lambda x: 7*euclid(8,4)(x),
+            #lambda x: 5*euclid(16,2)(x),
+            #lambda x: 9*euclid(16,3)(x)
+            )
+
+    for i in range(0,8):
+        hit = pattern(tick())
+        if(hit):
+            play(35 + hit)
         sleep(0.5)
+
+def loop(channel=4):
+    c = chord("Amaj9")
+    for i in range(0,4):
+        play(c(tick() % 5), 0.2)
+        sleep(0.5)
+
+def loop(channel=5):
+    play(4, 32)
+    sleep(32)
+
+def loop(channel=4):
+    c = chord("G5")
+    for i in range(0,3):
+        play(c(tick() % 3) - 24, 0.2)
+        sleep(1.0)
+
+def loop(channel=3):
+    c = chord("Gmaj7")
+    for i in range(0,3):
+        play(c(tick() % 3) - 12, 0.2)
+    sleep(4.0)
 
 def loop(channel=2):
     import math
@@ -77,22 +109,18 @@ def loop(channel=4):
         #play(c(tick()) - 12, 0.12)
         sleep(0.5)
 
-def loop(channel=3):
-    c = chord("Emin")
-    for i in range(0, 4):
-        drone(c(i))
-    sleep(16)
-
-def loop(channel=4):
+def loop(channel=2):
+    c = chord(ring("Fmaj9", "Cmaj7")(bar(64)//2))
     play(24, 16)
     sleep(16)
 
 
-def loop(channel=5):
-    import math
+def loop(channel=6):
+    play(4)
+    pattern = euclid(16,8)
     for i in range(0, 16):
         sleep(0.125)
-        cc(6, (tick() % 2 ), 5)
+        cc(6, 1-pattern(i), 5)
 
 
 def loop(channel=3):
@@ -114,7 +142,7 @@ def loop(channel=3):
         sleep(0.25)
 
 def loop(channel=1):
-    instrument(3)
+    instrument(2)
     for char in "10318591":
         if not char == '-':
             play(36 + int(char), 1, 1)
