@@ -21,6 +21,7 @@ from euclid import euclid as euclidArr
 import logging
 
 from pycurses import run_gui
+from random import random, choice, randrange
 
 
 midiouts = []
@@ -168,7 +169,7 @@ def main():
             if (channel_id, 'now') in code_map:
                 the_code = code_map[(channel_id, 'now')]
                 try:
-                    exec(the_code + "\nloop()", {'nsaw' : nsaw, 'nsin' : nsin, 'ringMax' : ringMax, 'euclid' : euclid, 'ring': ring, 'cc': cc, 'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone, 'instrument' : instrument})
+                    exec(the_code + "\nloop()", {'nsaw' : nsaw, 'nsin' : nsin, 'ringMax' : ringMax, 'euclid' : euclid, 'ring': ring, 'cc': cc, 'diatonic': diatonic, 'sleep': sleep, 'time': time, 'chord': chord, 'play': play, 'tick': tick, 'look': look, 'bar': bar, 'drone': drone, 'instrument' : instrument, 'random' : random, 'choose' : choice, 'randrange' : randrange})
                     #print(local_time)
                 except Exception as e:
                     logging.exception(f'Error evaluating channel {channel_id}\n{str(e)}')

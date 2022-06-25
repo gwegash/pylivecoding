@@ -7,8 +7,9 @@ def loop(channel=3):
     sleep(8)
 
 def loop(channel=4):
-    c = chord("Fmaj7")
+    c = chord("Cmaj7")
     for i in range(0,9):
         play(c(ring(*range(0,7))(-i)) + 12, 0.1)
-        sleep(0.5)
+        sleep(0.25)
+
 
